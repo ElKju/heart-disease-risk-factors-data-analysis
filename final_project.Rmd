@@ -1,0 +1,1039 @@
+---
+title: "STA303 FINAL PROJECT"
+author: "Li Quan Soh"
+date: "2024-03-14"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '2'
+    df_print: paged
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+  html_notebook:
+    toc: yes
+    toc_depth: 2
+    theme: cerulean
+---
+
+
+# 1 Research Question
+
+I aim to investigate the the impact of unhealthy lifestyle, characterized by poor dietary habits and lack of exercises, on an individual's predisposition to developing heart diseases. I will be using resting blood pressure, cholesterol level, and fasting blood sugar levels as physiological indicators of unhealthy lifestyle. Additionally, I will control for potential confounders in the form of age and gender and discuss their effects on my model. I will be modelling the relationships between these variables via GLM, specifically binomial logistic regression. 
+
+#### Why this question is different/ novel
+
+While the aforementioned risk factors for heart diseases have been studied individually before, few studies have examined them collectively as indicators of lifestyle habits. Moreover, my research question addresses  potential confounders, namely age and gender, to provide a more nuanced analysis of the association between lifestyle choice and heart disease development. 
+
+&nbsp;
+
+***
+
+&nbsp;
+
+# 2 Peer-reviewed articles
+
+1. Blood pressure and cholesterol as coronary heart disease risk factors:  
+
+* APA Citation:
+  + Tyroler, H. A. (1971). Blood pressure and cholesterol as coronary heart disease risk factors. Archives of Internal Medicine, 128(6), 907–914. https://doi.org/10.1001/archinte.1971.00310240061007 
+  + In-text: (Tyroler, 1971)
+
+* Research Question:
+  + This article explores the relationship between blood pressure and serum cholesterol levels, both individually and in combination, and the incidence of coronary heart disease (CHD) in Georgia.
+* Main Findings:
+  + This study indicates that elevated levels of cholesterol and blood pressure significantly increases the risk of coronary heart disease. However, there are differences in CHD incidence rates between white and black men. As such, race may be a confounder for developing CHD. 
+* How it influence my work:
+  + This study brings me confidence that cholesterol level and blood pressure are appropriate choices of exposure variables for my model. The study states that race is a potential confounder. However, race is not a variable in my dataset and I will ignore it.
+
+2. Effects of lifestyle-related factors on ischemic heart disease according to body mass index and fasting blood glucose levels in Korean adults:  
+
+* APA Citation: 
+  + Shin, J., Ham, D., Shin, S., Choi, S. K., Paik, H.-Y., & Joung, H. (2019). Effects of lifestyle-related factors on ischemic heart disease according to body mass index and fasting blood glucose levels in Korean adults. PLOS ONE, 14(5). https://doi.org/10.1371/journal.pone.0216534 
+  + In-text: (Shin et al., 2019)
+
+* Research Question:
+  + This study aims to investigate the effect of lifestyle-related factors on ischemic heart disease (IHD). Body Mass Index (BMI) and fasting blood glucose (FBG) levels are used as metrics for lifestyle-related factors.
+* Main Findings:
+  + The risk of IHD is higher in people with more life-style related risk factors such as unbalanced diet, smoking, excessive alcohol consumption, and lack of physical activity. These life0style related risk factors are evident in the increase in BMI and FBG levels among Korean adults. The effects of these lifestyle-related risk factors on the rate of IHD is more pronounced in women than in men. 
+* How it influence my work:
+  + This article suggests that fasting blood glucose level may be an appropriate exposure variable for my model. Since the effects of the risk factors on the incidence rate of IHD is stronger in women than in men, this means that sex is a potential confounder in my dataset. The article also considers age to be a potential confounder in their article too.Thus, I will be including age and sex as potential confounder.
+
+3.Risk factors for coronary heart disease: implications of gender: 
+
+* APA Citation:  
+  + Roeters van Lennep, J., Westerveld, H., Erkelens, D., & E van der Wall, E. (2002). Risk factors for coronary heart disease: Implications of gender. Cardiovascular Research, 53(3), 538–549. https://doi.org/10.1016/s0008-6363(01)00388-1 
+  + In-text:(Roeters van Lennep et al., 2002)
+
+* Research Question:
+  + This study addresses whether cardiovascular risk factors, such as diabetes, high density lipoproteins levels etc may have different levels of impact depending on the sex of the individual (men or women).
+* Main Findings:
+  + The majority of the risk factors considered in the study show no important differences between sexes. However, diabetes, HDL (cholesterol) level, and triglycerides levels have been found to have greater impact on heart disease risk in women than in men. On the other hand, lipoprotein level may have greater impact on heart disease risk in men than in women. 
+* How it influence my work:
+  + This paper considers diabetes and HDL level as risk factors for developing heart disease. Diabetes can be be measured by fasting blood glucose level. Thus, I will include fasting blood glucose level and cholesterol level as exposures in my model. Along with the 2nd paper, sex appears to be a strong potential confounding variable for my model.
+  
+&nbsp;
+
+***
+
+&nbsp;
+
+# 3 Dataset Summary and Predictors Definition
+
+Citation of my dataset:
+
+fedesoriano. (2021). Heart Failure Prediction Dataset [Data set]. Kaggle. https://www.kaggle.com/fedesoriano/heart-failure-prediction.
+
+#### Loading dataset
+```{r}
+dataset <- read.csv("heart.csv", header = TRUE, stringsAsFactors = TRUE)
+str(dataset)
+head(dataset)
+```
+
+#### Predictors
+
+_Outcome_  
+
+* Heart Disease
+  + Variable name: HeartDisease
+  + Variable Type: Categorical (Nominal)
+  + 1: Have heart disease
+  + 0: Do not have heart disease
+
+_Exposure Variables_  
+
+* Resting Blood Pressure 
+  + Variable name: RestingBP
+  + Variable Type: Numerical (Continuous)
+* Cholesterol Level
+  + Variable Name: Cholesterol
+  + Variable Type: Numerical (Continuous)
+* Fasting Blood Sugar Level
+  + Variable Name: FastingBS
+  + Variable Type: Categorical (Nominal)
+  + 1: FastingBS  $\gt$ 120 mg/dl
+  + 2: Fasting BS $\leq$ 120 mg/dl
+  
+_Confounders_
+
+* Age 
+  + Variable name: Age
+  + Variable Type: Numerical (Discrete)
+* Sex
+  + Variable name: Sex
+  + Variable Type: Categorial (Nominal)
+  + M: Male
+  + F: Female
+
+I am not considering the other variables as predictors because I am considering lifestyle choices and those are resulting data from diagnostic tools (ie. ECG), or health symptoms(ie chest pain and angina).
+
+
+#### Missing Values & Duplicated Rows 
+```{r, eval=TRUE, echo = T}
+# Count the missing values for each column
+sapply(dataset, function(x)sum(is.na(x)))
+
+# Check number of duplicated rows
+sum(duplicated(dataset) | duplicated(dataset, fromLast = TRUE))
+```
+There are no missing values or duplicated rows in my dataset.
+
+&nbsp;
+
+***
+
+&nbsp;
+
+# 4 Exploratory Data Analysis
+
+#### Dataset Summary
+```{r}
+library(ggplot2)
+# summary of dataset
+summary(dataset)
+```
+#### Individual Variable EDA
+
+__Age__
+```{r}
+# EDA for Age
+hist(dataset$Age, main="Distribution of Age", xlab="Age", ylab="Frequency")
+```
+
+__Sex__
+```{r}
+# EDA for Sex
+ggplot(dataset, aes(x = Sex)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Sex", x = "Sex (F: Female/M: Male)", y = "Count")
+```
+
+__Resting Blood Pressure__
+```{r}
+# EDA for Resting Blood Pressure
+hist(dataset$RestingBP, main="Distribution of Resting Blood Pressure",
+     xlab="Blood Pressure (mm/Hg)", ylab="Frequency")
+# Check the data points where resting blood pressure is less than 90, since 90 mm/Hg is considered the cutoff point for abnormal blood pressure
+any(dataset$RestingBP <= 90)
+dataset$RestingBP[which(dataset$RestingBP <= 90)]
+```
+
+__Cholesterol Level__
+```{r}
+# EDA for Cholesterol Level
+length(dataset$Cholesterol[which(dataset$Cholesterol < 100)])
+dataset$Cholesterol[which(dataset$Cholesterol < 100)]
+
+hist(dataset$Cholesterol, main="Distribution of Cholesterol Level",
+     xlab="Cholesterol Level (mm/dL)", ylab="Frequency")
+```
+
+__Fasting Blood Sugar Level__
+```{r}
+# EDA for Fasting Blood Sugar Level
+length(which(dataset$FastingBS == 0))
+length(which(dataset$FastingBS == 1))
+
+ggplot(dataset, aes(x = FastingBS)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Fasting Blood Sugar Level", 
+       x = "Fasting BS (Normal/Unhealthy)", y = "Count")
+```
+
+__Heart Disease__
+```{r}
+# EDA for Heart Disease 
+length(which(dataset$HeartDisease == 0))
+length(which(dataset$HeartDisease == 1))
+
+ggplot(dataset, aes(x = HeartDisease)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Developing Heart Disease", 
+       x = "Heart Disease (No/Yes)", y = "Count")
+```
+
+_Exposures_
+
+Systolic Blood pressure of 80 is abnormally low (hypotension), but it is technically still possible. However, blood pressure of 0 is impossible for living, so I will treat it as a data error.
+
+Cholesterol level of 603mm/dL is possible, though it's considered very abnormal and pose significant health risk (outlier). There are 172 datapoints where cholesterol level is 0mm/dL. This is not possible for human to live, so I will consider them as invalid data points and remove them.
+
+Individuals with Fasting Blood Sugar level of 120-125 mg/dL is considered to have prediabetes. Individuals with Fasting BS level of 126 mg/dL and up are considered to be diabetic. For my analysis, I will group prediabetes and diabetes together as "Unhealthy". This dataset transformed this metric into binary categorical variable (0 or 1) using 120 mg/dL as cut-off point (normal vs unhealthy). The fasting blood sugar level between normal and unhealthy group is not balanced: the number of individuals in these groups are 704 and 214 respectively.
+
+_Confounders_
+
+Distribution of age looks normal. 
+
+The number of males and females are quite unbalanced: 725 and 193 respectively.
+
+_Outcome_
+
+The numbers of individuals with heart disease or not is quite balanced: 508 and 410 respectively.
+
+
+## 4.1 Removing invalid datapoints and re-doing data points
+
+```{r}
+library(ggplot2)
+# removing invalid data points for Resting Blood Pressure
+dataset <- dataset[which(dataset$RestingBP != 0),]
+
+# removing invalid data points for Cholesterol
+dataset <- dataset[which(dataset$Cholesterol != 0),]
+
+summary(dataset)
+
+# Univariate Visualization
+hist(dataset$Age, main="Distribution of Age", xlab="Age", ylab="Frequency")
+
+ggplot(dataset, aes(x = Sex)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Sex", x = "Female/Male", y = "Count")
+
+hist(dataset$RestingBP, main="Distribution of Resting Blood Pressure",
+     xlab="Blood Pressure (mm/Hg)", ylab="Frequency")
+
+hist(dataset$Cholesterol, main="Distribution of Cholesterol Level",
+     xlab="Cholesterol Level (mm/dL)", ylab="Frequency")
+
+ggplot(dataset, aes(x = FastingBS)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Fasting Blood Sugar Level", 
+       x = "Fasting BS (Normal/Unhealthy)", y = "Count")
+
+ggplot(dataset, aes(x = HeartDisease)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Developing Heart Disease", 
+       x = "Heart Disease (No/Yes)", y = "Count")
+
+# Bivariate Visualization
+
+# Create a 2x2 contingency table for Heart Disease vs Fasting Blood Sugar Level
+HDvFastingBS <- table(dataset$HeartDisease, dataset$FastingBS)
+
+# Add margins for row and column totals
+HDvFastingBS <- addmargins(HDvFastingBS)
+
+# Label rows and columns
+rownames(HDvFastingBS) <- c("No HD", "Have HD", "Total")
+colnames(HDvFastingBS) <- c("Healthy BS Lvl", "Unhealthy BS Lvl", "Total")
+HDvFastingBS
+
+# Create a 2x2 contingency table for Heart Disease vs Sex
+HDvSex <- table(dataset$HeartDisease, dataset$Sex)
+
+# Add margins for row and column totals
+HDvSex <- addmargins(HDvSex)
+
+# Label rows and columns
+rownames(HDvSex) <- c("No HD", "Have HD", "Total")
+colnames(HDvSex) <- c("Female", "Male", "Total")
+HDvSex
+```
+
+&nbsp;
+
+***
+
+&nbsp;
+
+# 5 GLM Assumptions Verification
+
+Y (outcome) = Healthy or Have Heart Disease
+
+1. Independence of Y
+  + Each data point represents an individual. Each individual are independent sample, and the likelihood of having heart disease is independent of another individual.
+2. Distribution of Y
+  + Y is a categorical variable with only two levels/ outcomes: Healthy (No Heart Disease) or Have Heart Disease. Thus, I am using binomial logistic regression to model.
+3. Correct Link Function
+  + I will be using logit link as the link function for binomial logistic regression. I want to predict the probability of the outcome. Since probability is limited between 0 and 1, I need to use logit link to transform them to range from $-\infty$ and $\infty$. 
+
+
+&nbsp;
+
+***
+
+&nbsp;
+
+
+# 6 Modelling
+
+## 6.0 Conversion & Factoring
+```{r}
+df <- data.frame(dataset)
+df$Sex <- factor(df$Sex, 
+                 levels = c("F", "M"), 
+                 labels = c("0", "1"))
+df$ChestPainType <- factor(df$ChestPainType, 
+                           levels = c("ASY", "NAP", "ATA", "TA"),
+                           labels = c("0", "1", "2", "3"))
+df$FastingBS <- factor(df$FastingBS)
+df$RestingECG <- factor(df$RestingECG,
+                        levels = c("Normal", "ST", "LVH"),
+                        labels = c("0", "1", "1"))
+df$ExerciseAngina <- factor(df$ExerciseAngina,
+                            levels = c("N", "Y"),
+                            labels = c("0", 1))
+df$ST_Slope <- factor(df$ST_Slope,
+                      levels = c("Up", "Flat", "Down"),
+                      labels = c("0", "1", "1"))
+df$HeartDisease <- factor(df$HeartDisease)
+summary(df)
+```
+
+
+## 6.1 Logistic model
+```{r}
+logit.mod.all <- glm(HeartDisease ~ Age + Sex + ChestPainType + RestingBP + Cholesterol + FastingBS + RestingECG + MaxHR + ExerciseAngina + Oldpeak + ST_Slope,
+                  family = binomial(link=logit),
+                  data = df)
+summary(logit.mod.all)
+```
+
+
+
+## 6.2 Checking multicollinearity
+
+```{r}
+library(ggplot2)
+library(ggcorrplot)
+library(magrittr)
+
+fmla = formula(HeartDisease~.-HeartDisease)
+x <- model.matrix(fmla, data=df)
+
+x %>%
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag=FALSE, type="lower", lab=TRUE, lab_size=2,
+             title = "Multicollinearity Plot of Predictors")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+# 7 Model Selection
+
+Stepwise selection based on AIC and BIC
+
+## 7.1 AIC Model
+First let's perform AIC based stepwise selection
+```{r, eval=TRUE, echo = T}
+## Stepwise elimination based on AIC ##
+sel.var.aic <- step(logit.mod.all, trace = 0, k = 2, direction = "both") 
+select_var_aic<-attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+logit.mod.aic <- glm(HeartDisease ~.,
+                     family = binomial(link=logit),
+                     data = df[, which(colnames(df) %in% 
+                                              c(select_var_aic, "HeartDisease"))])
+summary(logit.mod.aic)
+```
+## 7.2 BIC Model
+Now perform BIC based selection,
+```{r, eval=TRUE, echo = T}
+## Stepwise elimination based on BIC ##
+sel.var.bic <- step(logit.mod.all, trace = 0, k = log(nrow(df)), direction = "both")
+select_var_bic<-attr(terms(sel.var.bic), "term.labels")   
+select_var_bic
+
+logit.mod.bic <- glm(HeartDisease ~.,
+                     family = binomial(link=logit),
+                     data = df[, which(colnames(df) %in% 
+                                              c(select_var_bic, "HeartDisease"))])
+summary(logit.mod.bic)
+```
+
+
+
+## 7.3 Elastic Net Model
+```{r}
+library(glmnet)
+fmla = formula(HeartDisease~.-HeartDisease-1)
+x <- model.matrix(fmla, data=df)
+
+y <- df$HeartDisease
+
+cv.en = cv.glmnet(x, y, family = "binomial", type.measure = "class", alpha = 0.5)
+
+plot(cv.en)
+best.lambda.en <- cv.en$lambda.1se
+best.lambda.en
+co.en <- coef(cv.en, s = "lambda.1se")
+co.en
+
+thresh <- 0.0
+# sel variables
+inds <- which(abs(co.en) > thresh)
+variables <- row.names(co.en)[inds]
+sel.var.en <- variables[!(variables %in% '(Intercept)')]
+
+print("Selected Variables:")
+sel.var.en
+
+logit.mod.en <- glm(HeartDisease ~.,
+                     family = binomial(link=logit),
+                     data = df[, which(colnames(df) %in% 
+                                              c(sel.var.en, "HeartDisease"))])
+summary(logit.mod.en)
+
+```
+
+## 7.4 Lasso Model
+```{r}
+cv.lasso = cv.glmnet(x, y, family = "binomial", type.measure = "class", alpha = 1)
+
+plot(cv.lasso)
+best.lambda.lasso <- cv.lasso$lambda.1se
+best.lambda.lasso
+co.lasso <- coef(cv.lasso, s = "lambda.1se")
+co.lasso
+
+thresh <- 0.0
+# sel variables
+inds <- which(abs(co.lasso) > thresh)
+variables <- row.names(co.lasso)[inds]
+sel.var.lasso <- variables[!(variables %in% '(Intercept)')]
+
+print("Selected Variables:")
+sel.var.lasso
+
+logit.mod.lasso <- glm(HeartDisease ~.,
+                     family = binomial(link=logit),
+                     data = df[, which(colnames(df) %in% 
+                                              c(sel.var.lasso, "HeartDisease"))])
+summary(logit.mod.lasso)
+```
+
+
+
+
+
+
+
+# 8 Model Diagnostics and Validation
+
+#### VIF for all models
+```{r}
+library(car)
+vif(logit.mod.all)
+
+vif(logit.mod.aic)
+
+vif(logit.mod.bic)
+
+vif(logit.mod.en)
+
+vif(logit.mod.lasso)
+```
+
+## 8.1 Diagnostics for stepwise-AIC model
+
+#### DFBetas
+```{r}
+# Calculating DFBetas for AIC model
+dfbetas.aic <- dfbetas(logit.mod.aic)
+par(family = 'serif')
+
+# Age
+plot(df$Age, dfbetas.aic[,1], xlab='Age', 
+     ylab='dfbeta')
+lines(lowess(df$Age, dfbetas.aic[,1]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+abline(h=2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+
+# Sex
+plot(df$Sex, dfbetas.aic[,2], xlab='Sex', 
+     ylab='dfbeta')
+lines(lowess(df$Sex, dfbetas.aic[,2]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+abline(h=2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+
+# Chest Pain Types
+plot(df$ChestPainType, dfbetas.aic[,3:5], xlab='Chest Pain Type', 
+     ylab='dfbeta')
+#lines(lowess(df$ChestPainType, dfbetas.aic[,3:5]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+abline(h=2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+
+# Resting Blood Pressure
+plot(df$RestingBP, dfbetas.aic[,6], xlab='Resting Blood Pressure', 
+     ylab='dfbeta')
+lines(lowess(df$RestingBP, dfbetas.aic[,6]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+abline(h=2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+
+# Cholesterol
+plot(df$Cholesterol, dfbetas.aic[,7], xlab='Cholesterol', 
+     ylab='dfbeta')
+lines(lowess(df$Cholesterol, dfbetas.aic[,7]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+abline(h=2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+
+# Angina caused by exercise
+plot(df$ExerciseAngina, dfbetas.aic[,8], xlab='Angina caused by exercise', 
+     ylab='dfbeta')
+lines(lowess(df$ExerciseAngina, dfbetas.aic[,8]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+abline(h=2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+
+# Oldpeak
+plot(df$Oldpeak, dfbetas.aic[,9], xlab='Oldpeak', 
+     ylab='dfbeta')
+lines(lowess(df$Oldpeak, dfbetas.aic[,9]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+abline(h=2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+
+# ST Slope
+plot(df$ST_Slope, dfbetas.aic[,10], xlab='ST Slope', 
+     ylab='dfbeta')
+lines(lowess(df$ST_Slope, dfbetas.aic[,10]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+abline(h=2/sqrt(nrow(dfbetas.aic)), lty='dotted')
+```
+
+#### DFFits
+```{r}
+# Calculating DFFits for AIC model
+dffits.aic <- dffits(logit.mod.aic)
+influential_pts <- abs(dffits.aic) > 2*sqrt((length(logit.mod.aic$coefficients)-1)/nrow(df))
+length(which(influential_pts))
+par(family = 'serif')
+
+plot(dffits.aic, main="DFFITS Plot for stepwise-AIC model", xlab="Observation",
+     ylab="DFFITS", col = ifelse(influential_pts, "red", "black"))
+#Critical Value horizontal lines
+abline(h = 2*sqrt((length(logit.mod.aic$coefficients)-1)/nrow(df)), lty = 2)
+abline(h = -2*sqrt((length(logit.mod.aic$coefficients)-1)/nrow(df)), lty = 2)
+
+
+```
+
+#### Cook's Distance
+```{r}
+cd.aic <-cooks.distance(logit.mod.aic)
+length(which(cd.aic > qf(0.5, 12+1, 746-12-1)))  #qf(0.5, p+1, n-p-1), where n =746, p=12
+influential_pts <- cd.aic > 4/length(cd.aic)
+length(which(influential_pts)) # number of influential points
+length(which(influential_pts))/length(cd.aic)*100 # proportion of data points that are influential
+
+# Plot Cook's distance
+plot(cd.aic, pch = 20, col = ifelse(influential_pts, "red", "black"),
+     main = "Cook's Distance Plot for AIC model", xlab = "Observation", ylab = "Cook's Distance")
+
+# Adding a horizontal line at Cook's distance cutoff (4/n)
+abline(h = 4/length(cd.aic), col = "red", lty = 2) 
+```
+
+
+#### Cross Validation & Calibration plot
+```{r}
+library(rms)
+
+## Fit the model with lrm from rms package ##
+lrm.aic <- lrm(HeartDisease ~ ., data = df[,which(colnames(df) %in% c(select_var_aic, "HeartDisease"))], x =TRUE, y = TRUE, model= T)
+
+ # model calibration
+cross.calib.aic <- calibrate(lrm.aic, method="crossvalidation", B=10)
+plot(cross.calib.aic, las=1, xlab = "Predicted Probability",
+     main = "Calibration Plot for AIC-selected model")
+```
+
+#### ROC Curve
+```{r warning=FALSE}
+library(pROC)
+p.aic <- predict(lrm.aic, type = "fitted")
+
+roc.aic <- roc(df$HeartDisease ~ p.aic)
+## The True Positive Rate ##
+TPR.aic <- roc.aic$sensitivities
+## The False Positive Rate ##
+FPR.aic <- 1 - roc.aic$specificities
+
+plot(FPR.aic, TPR.aic, xlim = c(0,1), ylim = c(0,1), type = 'l', lty = 1, lwd = 2,col = 'red', xlab = "False Positive Rate", ylab = "True Positive Rate",
+     main = "ROC Curve for step-AIC-selected model")
+abline(a = 0, b = 1, lty = 2, col = 'blue')
+text(0.7,0.4,label = paste("AUC = ", round(auc(roc.aic),2)))
+
+auc(roc.aic)
+```
+
+## 8.2 Diagnostics for stepwise-BIC model
+
+#### DFFits
+```{r}
+# Calculating DFFits for bic model
+dffits.bic <- dffits(logit.mod.bic)
+influential_pts <- abs(dffits.bic) > 2*sqrt((length(logit.mod.bic$coefficients)-1)/nrow(df))
+length(which(influential_pts))
+par(family = 'serif')
+
+plot(dffits.bic, main="DFFITS Plot for stepwise-BIC model", xlab="Observation", ylab="DFFITS", col = ifelse(influential_pts, "red", "black"))
+#Critical Value horizontal lines
+abline(h = 2*sqrt((length(logit.mod.bic$coefficients)-1)/nrow(df)), lty = 2)
+abline(h = -2*sqrt((length(logit.mod.bic$coefficients)-1)/nrow(df)), lty = 2)
+```
+
+#### Cook's Distance
+```{r}
+cd.bic <-cooks.distance(logit.mod.bic)
+influential_pts <- cd.bic > 4/length(cd.bic)
+length(which(influential_pts)) # number of influential points
+length(which(influential_pts))/length(cd.bic)*100 # proportion of data points that are influential
+
+# Plot Cook's distance
+plot(cd.bic, pch = 20, col = ifelse(influential_pts, "red", "black"),
+     main = "Cook's Distance Plot for BIC-selected model", xlab = "Observation", ylab = "Cook's Distance")
+
+# Adding a horizontal line at Cook's distance cutoff (4/n)
+abline(h = 4/length(cd.bic), col = "red", lty = 2) 
+```
+
+#### Cross Validation & Calibration plot
+```{r}
+library(rms)
+
+## Fit the model with lrm from rms package ##
+lrm.bic <- lrm(HeartDisease ~ ., data = df[,which(colnames(df) %in% c(select_var_bic, "HeartDisease"))], x =TRUE, y = TRUE, model= T)
+
+ # model calibration
+cross.calib.bic <- calibrate(lrm.bic, method="crossvalidation", B=10)
+plot(cross.calib.bic, las=1, xlab = "Predicted Probability",
+     main = "Calibration Plot for BIC-selected model")
+```
+
+#### ROC Curve
+```{r warning=FALSE, ,message = FALSE}
+library(pROC)
+p.bic <- predict(lrm.bic, type = "fitted")
+
+roc.bic <- roc(df$HeartDisease ~ p.bic)
+## The True Positive Rate ##
+TPR.bic <- roc.bic$sensitivities
+## The False Positive Rate ##
+FPR.bic <- 1 - roc.bic$specificities
+
+plot(FPR.bic, TPR.bic, xlim = c(0,1), ylim = c(0,1), type = 'l', lty = 1, lwd = 2,col = 'red', xlab = "False Positive Rate", ylab = "True Positive Rate",
+     main = "ROC Curve for BIC-selected model")
+abline(a = 0, b = 1, lty = 2, col = 'blue')
+text(0.7,0.4,label = paste("AUC = ", round(auc(roc.bic),2)))
+
+auc(roc.bic)
+```
+
+
+
+
+
+
+
+
+
+
+## 8.3 Diagnostics for Elastic Net model
+
+#### DFFits
+```{r}
+# Calculating DFFits for EN model
+dffits.en <- dffits(logit.mod.en)
+influential_pts <- abs(dffits.en) > 2*sqrt((length(logit.mod.en$coefficients)-1)/nrow(df))
+length(which(influential_pts))
+par(family = 'serif')
+
+plot(dffits.en, main="DFFITS Plot for EN-selected model", xlab="Observation", ylab="DFFITS", col = ifelse(influential_pts, "red", "black"))
+#Critical Value horizontal lines
+abline(h = 2*sqrt((length(logit.mod.en$coefficients)-1)/nrow(df)), lty = 2)
+abline(h = -2*sqrt((length(logit.mod.en$coefficients)-1)/nrow(df)), lty = 2)
+```
+
+#### Cook's Distance
+```{r}
+cd.en <-cooks.distance(logit.mod.en)
+length(which(cd.en > qf(0.5, 12+1, 746-12-1)))  #qf(0.5, p+1, n-p-1), where n =746, p=12
+influential_pts <- cd.en > 4/length(cd.en)
+length(which(influential_pts)) # number of influential points
+length(which(influential_pts))/length(cd.en)*100 # proportion of data points that are influential
+
+# Plot Cook's distance
+plot(cd.en, pch = 20, col = ifelse(influential_pts, "red", "black"),
+     main = "Cook's Distance Plot for Elastic Net-selected model", 
+     xlab = "Observation", ylab = "Cook's Distance")
+
+# Adding a horizontal line at Cook's distance cutoff (4/n)
+abline(h = 4/length(cd.en), col = "red", lty = 2) 
+```
+
+
+#### Cross Validation & Calibration plot
+```{r}
+#library(rms)
+
+## Fit the model with lrm from rms package ##
+lrm.en <- lrm(HeartDisease ~ ., data = df[,which(colnames(df) %in% c(sel.var.en, "HeartDisease"))], x =TRUE, y = TRUE, model= T)
+
+ # model calibration
+cross.calib.en <- calibrate(lrm.en, method="crossvalidation", B=10)
+plot(cross.calib.en, las=1, xlab = "Predicted Probability", 
+     main = "Calibration Plot for Elastic Net-selected model")
+```
+
+#### ROC Curve
+```{r warning=FALSE}
+library(pROC)
+p.en <- predict(lrm.en, type = "fitted")
+
+roc.en <- roc(df$HeartDisease ~ p.en)
+## The True Positive Rate ##
+TPR.en <- roc.en$sensitivities
+## The False Positive Rate ##
+FPR.en <- 1 - roc.en$specificities
+
+plot(FPR.en, TPR.en, xlim = c(0,1), ylim = c(0,1), type = 'l', lty = 1, lwd = 2,col = 'red', xlab = "False Positive Rate", ylab = "True Positive Rate",
+     main = "ROC Curve for Elastic Net-selected model")
+abline(a = 0, b = 1, lty = 2, col = 'blue')
+text(0.7,0.4,label = paste("AUC = ", round(auc(roc.en),2)))
+
+auc(roc.en)
+```
+
+
+
+
+
+## 8.4 Diagnostics for Lasso model
+
+#### DFFits
+```{r}
+# Calculating DFFits for Lasso-selected model
+dffits.lasso <- dffits(logit.mod.lasso)
+influential_pts <- abs(dffits.lasso) > 2*sqrt((length(logit.mod.lasso$coefficients)-1)/nrow(df))
+length(which(influential_pts))
+par(family = 'serif')
+
+plot(dffits.lasso, main="DFFITS Plot for Lasso-selected model", xlab="Observation", ylab="DFFITS", col = ifelse(influential_pts, "red", "black"))
+#Critical Value horizontal lines
+abline(h = 2*sqrt((length(logit.mod.lasso$coefficients)-1)/nrow(df)), lty = 2)
+abline(h = -2*sqrt((length(logit.mod.lasso$coefficients)-1)/nrow(df)), lty = 2)
+```
+
+#### Cook's Distance
+```{r}
+cd.lasso <-cooks.distance(logit.mod.lasso)
+length(which(cd.lasso > qf(0.5, 12+1, 746-12-1)))  #qf(0.5, p+1, n-p-1), where n =746, p=12
+influential_pts <- cd.lasso > 4/length(cd.lasso)
+length(which(influential_pts)) # number of influential points
+length(which(influential_pts))/length(cd.lasso)*100 # proportion of data points that are influential
+
+# Plot Cook's distance
+plot(cd.lasso, pch = 20, col = ifelse(influential_pts, "red", "black"),
+     main = "Cook's Distance Plot for LASSO-selected model", xlab = "Observation", ylab = "Cook's Distance")
+
+# Adding a horizontal line at Cook's distance cutoff (4/n)
+abline(h = 4/length(cd.lasso), col = "red", lty = 2) 
+```
+
+
+#### Cross Validation & Calibration plot
+```{r}
+library(rms)
+
+## Fit the model with lrm from rms package ##
+lrm.lasso <- lrm(HeartDisease ~ ., data = df[,which(colnames(df) %in% c(sel.var.lasso, "HeartDisease"))], x =TRUE, y = TRUE, model= T)
+
+ # model calibration
+cross.calib.lasso <- calibrate(lrm.lasso, method="crossvalidation", B=10)
+plot(cross.calib.lasso, las=1, xlab = "Predicted Probability", 
+     main = "Calibration Plot for LASSO-selected model")
+```
+
+#### ROC Curve
+```{r warning=FALSE}
+library(pROC)
+p.lasso <- predict(lrm.lasso, type = "fitted")
+
+roc.lasso <- roc(df$HeartDisease ~ p.lasso)
+## The True Positive Rate ##
+TPR.lasso <- roc.lasso$sensitivities
+## The False Positive Rate ##
+FPR.lasso <- 1 - roc.lasso$specificities
+
+plot(FPR.lasso, TPR.lasso, xlim = c(0,1), ylim = c(0,1), type = 'l', lty = 1, lwd = 2,col = 'red', xlab = "False Positive Rate", ylab = "True Positive Rate",
+     main = "ROC Curve for LASSO-selected model")
+abline(a = 0, b = 1, lty = 2, col = 'blue')
+text(0.7,0.4,label = paste("AUC = ", round(auc(roc.lasso),2)))
+
+auc(roc.lasso)
+```
+
+
+
+
+
+# 9 Final Model
+
+## 9.1 BIC Model + Predictors of Interest
+```{r}
+exposures <- c("RestingBP", "Cholesterol", "FastingBS")
+sel.var.final <- c(exposures, select_var_bic)
+logit.mod.final <- glm(HeartDisease ~.,
+                     family = binomial(link=logit),
+                     data = df[, which(colnames(df) %in% c(sel.var.final,
+                                                           "HeartDisease"))])
+summary(logit.mod.final)
+```
+
+## 9.2 Diagnostics
+
+#### Multicollinearity of final model
+```{r}
+fmla = formula(HeartDisease~.-HeartDisease-MaxHR-RestingECG-Oldpeak)
+x <- model.matrix(fmla, data=df)
+
+x %>%
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag=FALSE, type="lower", lab=TRUE, lab_size=2,
+             title = "Multicollinearity Plot of Predictors")
+
+
+```
+
+### Multicollinearity via VIF
+```{r}
+
+vif(logit.mod.final)
+```
+
+
+#### DFFits
+```{r}
+# Calculating DFFits for Final model
+dffits.final <- dffits(logit.mod.final)
+influential_pts <- abs(dffits.final) > 2*sqrt((length(logit.mod.final$coefficients)-1)/nrow(df))
+length(which(influential_pts))
+par(family = 'serif')
+
+plot(dffits.final, main="DFFITS Plot for Final Model", xlab="Observation",
+     ylab="DFFITS", col = ifelse(influential_pts, "red", "black"))
+#Critical Value horizontal lines
+abline(h = 2*sqrt((length(logit.mod.final$coefficients)-1)/nrow(df)), lty = 2)
+abline(h = -2*sqrt((length(logit.mod.final$coefficients)-1)/nrow(df)), lty = 2)
+
+
+```
+
+#### Cook's Distance
+```{r}
+cd.final <-cooks.distance(logit.mod.final)
+length(which(cd.final > qf(0.5, 12+1, 746-12-1)))  #qf(0.5, p+1, n-p-1), where n =746, p=12
+influential_pts <- cd.final > 4/length(cd.final)
+length(which(influential_pts)) # number of influential points
+length(which(influential_pts))/length(cd.final)*100 # proportion of data points that are influential
+
+# Plot Cook's distance
+plot(cd.final, pch = 20, col = ifelse(influential_pts, "red", "black"),
+     main = "Cook's Distance Plot for final model", xlab = "Observation", ylab = "Cook's Distance")
+
+# Adding a horizontal line at Cook's distance cutoff (4/n)
+abline(h = 4/length(cd.final), col = "red", lty = 2) 
+```
+
+
+## 9.3 Model Validation
+
+#### Cross Validation & Calibration plot
+```{r warning=FALSE, message=FALSE}
+library(rms)
+
+## Fit the model with lrm from rms package ##
+lrm.final <- lrm(HeartDisease ~ ., data = df[,which(colnames(df) %in% c(sel.var.final, "HeartDisease"))], x =TRUE, y = TRUE, model= T)
+
+ # model calibration
+cross.calib.final <- calibrate(lrm.final, method="crossvalidation", B=10)
+plot(cross.calib.final, las=1, xlab = "Predicted Probability", 
+     main = "Calibration Plot for Final Model")
+```
+
+#### ROC Curve
+```{r warning=FALSE, message=FALSE}
+library(pROC)
+p.final <- predict(lrm.final, type = "fitted")
+
+roc.final <- roc(df$HeartDisease ~ p.final)
+## The True Positive Rate ##
+TPR.final <- roc.final$sensitivities
+## The False Positive Rate ##
+FPR.final <- 1 - roc.final$specificities
+
+plot(FPR.final, TPR.final, xlim = c(0,1), ylim = c(0,1), type = 'l', lty = 1, lwd = 2,col = 'red', xlab = "False Positive Rate", ylab = "True Positive Rate",
+     main = "ROC Curve for Final model")
+abline(a = 0, b = 1, lty = 2, col = 'blue')
+text(0.7,0.4,label = paste("AUC = ", round(auc(roc.final),2)))
+
+auc(roc.final)
+```
+
+
+## 9.4 Model Comparison
+
+#### Model for AIC + predictor of interest
+Since the AIC has 2 of my 3 predictor of interests (Resting Blood Pressure and Cholesterol), I will add the 3rd predictor of interest (Fasting Blood Sugar) and to the model logit.mod.f1. I will compare it to the "BIC + predictor of interest" model.
+```{r}
+sel.var.f1 <- c(select_var_aic, "FastingBS")
+logit.mod.f1 <- glm(HeartDisease ~.,
+                     family = binomial(link=logit),
+                     data = df[, which(colnames(df) %in% 
+                                              c(sel.var.f1, "HeartDisease"))])
+summary(logit.mod.f1)
+
+## Fit the model with lrm from rms package ##
+lrm.f1 <- lrm(HeartDisease ~ ., data = df[,which(colnames(df) %in% c(sel.var.f1, "HeartDisease"))], x =TRUE, y = TRUE, model= T)
+
+ # model calibration
+cross.calib.f1 <- calibrate(lrm.f1, method="crossvalidation", B=10)
+plot(cross.calib.f1, las=1, xlab = "Predicted Probability", 
+     main = "Calibration Plot for F1 Model")
+
+p.f1 <- predict(lrm.f1, type = "fitted")
+
+roc.f1 <- roc(df$HeartDisease ~ p.f1)
+## The True Positive Rate ##
+TPR.f1 <- roc.f1$sensitivities
+## The False Positive Rate ##
+FPR.f1 <- 1 - roc.f1$specificities
+
+plot(FPR.f1, TPR.f1, xlim = c(0,1), ylim = c(0,1), type = 'l', lty = 1, lwd = 2,col = 'red', xlab = "False Positive Rate", ylab = "True Positive Rate",
+     main = "ROC Curve for F1 model")
+abline(a = 0, b = 1, lty = 2, col = 'blue')
+text(0.7,0.4,label = paste("AUC = ", round(auc(roc.f1),2)))
+
+auc(roc.f1)
+```
+
+
+#### Likelihood Ratio test
+PoI = Predictor of Interest
+From the result below, it seems like the AIC+PoI model (more complex model) does not fit the data significantly better than the BIC+PoI model, with a LRTest P-val of 0.01 < 0.05. Thus, we will use BIC+PoI model as my final model.
+```{r message=FALSE}
+library(lmtest)
+lrtest(logit.mod.final, logit.mod.bic)
+lrtest(logit.mod.f1, logit.mod.final)
+lrtest(logit.mod.all, logit.mod.final)
+lrtest(logit.mod.all, logit.mod.aic)
+lrtest(logit.mod.all, logit.mod.bic)
+lrtest(logit.mod.all, logit.mod.en)
+lrtest(logit.mod.all, logit.mod.lasso)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
