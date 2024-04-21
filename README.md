@@ -5,6 +5,7 @@ Source of dataset: [kaggle](https://www.kaggle.com/datasets/fedesoriano/heart-fa
 Final report can be found [here]()
 
 Data analysis include:
+- Data parsing and cleaning
 - Exploratory data analysis
 - Variable selections: exposures, confounders, interactions
 - Multicollinearity testing
