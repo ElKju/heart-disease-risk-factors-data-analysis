@@ -2,7 +2,7 @@
 
 Source of dataset: [kaggle](https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction/data). This dataset is aggregated from 5 independent data sets that can be found in UCI Machine Learning Repository.
 
-Final report can be found [here]()
+Final report can be found [here](https://github.com/ElKju/heart-disease-risk-factors-data-analysis/blob/main/STA303%20FINAL%20REPORT.pdf)
 
 Data analysis include:
 - Data parsing and cleaning
